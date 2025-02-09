@@ -1,0 +1,6 @@
+parsers:
+  - url: https://example.com/profile.yaml
+    remote:
+      url: https://raw.githubusercontent.com/Huffer342-WSH/CFW-parsers/main/cfw_parser.js
+      url: https://cdn.jsdelivr.net/gh/Huffer342-WSH/Clash-for-Windwos-parsers@main/cfw_parser.js
+      cache: true # 默认为false，指示是否对重复下载此预处理代码使用缓存
