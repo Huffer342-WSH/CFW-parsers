@@ -13,27 +13,25 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
     newobj["external-controller"] = "127.0.0.1:9090";
     newobj["dns"] = {
         enable: true,
-        ipv6: false,
-        "default-nameserver": ["223.5.5.5", "119.29.29.29"],
+        ipv6: true,
+        "default-nameserver": [
+            "223.5.5.5"
+        ],
         "enhanced-mode": "fake-ip",
         "fake-ip-range": "198.18.0.1/16",
-        "use-hosts": true,
+        "use-hosts": true,               
         nameserver: [
             "https://doh.pub/dns-query",
-            "https://dns.alidns.com/dns-query",
+            "https://dns.alidns.com/dns-query",  
+            "202.96.128.86",
+            "114.114.114.114"               
         ],
-        fallback: [
-            "https://1.1.1.1/dns-query",
-            "https://208.67.222.222/dns-query",
-            "https://dns.twnic.tw/dns-query",
-            "tls://8.8.4.4:853",
+        "proxy-server-nameserver": [
+            "https://1.1.1.1/dns-query",    
+            "https://8.8.8.8/dns-query"       
         ],
-        "fallback-filter": {
-            geoip: true,
-            "geoip-code": "CN",
-            ipcidr: ["240.0.0.0/4", "0.0.0.0/32"],
-        },
     };
+
 
     //======================  proxies ======================
     newobj["proxies"] = obj["proxies"]
@@ -313,7 +311,7 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
 
         //steam
         'DOMAIN,steamcommunity.com,默认代理',
-        'PROCESS-NAME,steam,DIRECT',
+        'PROCESS-NAME,steamwebhelper.exe,默认代理',
         'PROCESS-NAME,steam.exe,DIRECT',
 
         //Matlab

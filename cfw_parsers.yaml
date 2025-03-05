@@ -16,27 +16,25 @@ parsers:
           newobj["external-controller"] = "127.0.0.1:9090";
           newobj["dns"] = {
               enable: true,
-              ipv6: false,
-              "default-nameserver": ["223.5.5.5", "119.29.29.29"],
+              ipv6: true,
+              "default-nameserver": [
+                  "223.5.5.5"
+              ],
               "enhanced-mode": "fake-ip",
               "fake-ip-range": "198.18.0.1/16",
-              "use-hosts": true,
+              "use-hosts": true,               
               nameserver: [
                   "https://doh.pub/dns-query",
-                  "https://dns.alidns.com/dns-query",
+                  "https://dns.alidns.com/dns-query",  
+                  "202.96.128.86",
+                  "114.114.114.114"               
               ],
-              fallback: [
-                  "https://1.1.1.1/dns-query",
-                  "https://208.67.222.222/dns-query",
-                  "https://dns.twnic.tw/dns-query",
-                  "tls://8.8.4.4:853",
+              "proxy-server-nameserver": [
+                  "https://1.1.1.1/dns-query",    
+                  "https://8.8.8.8/dns-query"       
               ],
-              "fallback-filter": {
-                  geoip: true,
-                  "geoip-code": "CN",
-                  ipcidr: ["240.0.0.0/4", "0.0.0.0/32"],
-              },
           };
+      
       
           //======================  proxies ======================
           newobj["proxies"] = obj["proxies"]
@@ -116,7 +114,7 @@ parsers:
           });
       
           const proxiesDefault = ['默认代理', 'DIRECT', '负载均衡-轮询', '负载均衡-一致性哈希', ...proxiesCountries, ...proxiesUseful];
-          const proxiesChatgpt = proxiesUseful.filter(proxy => !proxy.includes('香港')); //GPT节点组排除香港
+          const proxiesChatgpt = proxiesDefault.filter(proxy => !proxy.includes('香港')); //GPT节点组排除香港
       
           const proxyGroupConfigs = [
               {
@@ -283,8 +281,30 @@ parsers:
               'IP-CIDR,fe80::/10,DIRECT,no-resolve',
               'IP-CIDR,ff00::/8,DIRECT,no-resolve',
       
-              //覆盖规则集
+              //=========================================================
+              //              覆盖规则集
+              //=========================================================
               'DOMAIN-SUFFIX,haita.io,默认代理',
+      
+              //chatgpt
+              'DOMAIN-SUFFIX,chatgpt.com,chatgpt',
+              'DOMAIN-SUFFIX,openai.com,chatgpt',
+              'DOMAIN,i0.wp.com,chatgpt',
+              'DOMAIN,files.oaiusercontent.com,chatgpt',
+              'DOMAIN,cdn.auth0.com,chatgpt',
+              'DOMAIN,challenges.cloudflare.com,chatgpt',
+              'DOMAIN,cdn.oaistatic.com,chatgpt',
+              'DOMAIN,ccdn.auth0.com,chatgpt',
+              'DOMAIN,s.gravatar.com,chatgpt',
+              'DOMAIN-KEYWORD,gemini,chatgpt',
+              'DOMAIN-KEYWORD,claude,chatgpt',
+              'DOMAIN,plausible.midway.run,chatgpt',
+      
+              //Bing Copilot
+              'DOMAIN-SUFFIX,bing.com,bing',
+              'DOMAIN-KEYWORD,copilot,bing',
+              'DOMAIN-SUFFIX,bingapis.com,bing',
+              'DOMAIN-SUFFIX,bingparachute.com,bing',
       
               // 战网
               'PROCESS-NAME,Battle.net,战网',
@@ -292,7 +312,22 @@ parsers:
               'DOMAIN-SUFFIX,battle.net,战网',
               'DOMAIN-SUFFIX,blizzard.com,战网',
       
-              // 外部规则集
+              //steam
+              'DOMAIN,steamcommunity.com,默认代理',
+              'PROCESS-NAME,steamwebhelper.exe,默认代理',
+              'PROCESS-NAME,steam.exe,DIRECT',
+      
+              //Matlab
+              'PROCESS-NAME,MathWorksProductInstaller,DIRECT',
+              'PROCESS-NAME,MathWorksProductInstaller.exe,DIRECT',
+              'PROCESS-NAME,MATLABWindow,DIRECT',
+              'PROCESS-NAME,MATLABWindow.exe,DIRECT',
+              'DOMAIN,esd.mathworks.com,DIRECT',
+              'DOMAIN-SUFFIX,mathworks.com,默认代理',
+      
+              //=========================================================
+              //              外部规则集
+              //=========================================================
               // 'RULE-SET,applications,DIRECT',
               'RULE-SET,reject,REJECT',
               'RULE-SET,private,DIRECT',
@@ -307,17 +342,12 @@ parsers:
               'GEOIP,LAN,DIRECT',
               'GEOIP,CN,DIRECT',
       
-              //Matlab
-              'PROCESS-NAME,MathWorksProductInstaller,DIRECT',
-              'PROCESS-NAME,MATLABWindow,DIRECT',
-              'DOMAIN,esd.mathworks.com,DIRECT',
-              'DOMAIN-SUFFIX,mathworks.com,默认代理',
+              //=========================================================
+              //              低于规则集
+              //=========================================================
       
               //steam
-              'DOMAIN-KEYWORD,steamcloud,默认代理',
-              'DOMAIN,steamcommunity.com,默认代理',
-              'DOMAIN-SUFFIX,steampowered.com,默认代理',
-              'PROCESS-NAME,steam,DIRECT',
+      
       
               //默认代理 
               'PROCESS-NAME,Clash for Windows,默认代理',
@@ -374,25 +404,6 @@ parsers:
               'DOMAIN-KEYWORD,asasmr,DIRECT',
               'DOMAIN,clash.razord.top,DIRECT',
               'DOMAIN,yacd.haishan.me,DIRECT',
-      
-              //chatgpt
-              'DOMAIN,challenges.cloudflare.com,chatgpt',
-              'DOMAIN-SUFFIX,chatgpt.com,chatgpt',
-              'DOMAIN-SUFFIX,openai.com,chatgpt',
-              'DOMAIN,cdn.oaistatic.com,chatgpt',
-              'DOMAIN,ccdn.auth0.com,chatgpt',
-              'DOMAIN,s.gravatar.com,chatgpt',
-              'DOMAIN-KEYWORD,gemini,chatgpt',
-              'DOMAIN-KEYWORD,claude,chatgpt',
-              'DOMAIN,plausible.midway.run,chatgpt',
-      
-              //Bing Copilot
-              'DOMAIN-SUFFIX,bing.com,bing',
-              'DOMAIN-KEYWORD,copilot,bing',
-              'DOMAIN-SUFFIX,bingapis.com,bing',
-              'DOMAIN-SUFFIX,bingparachute.com,bing',
-      
-      
       
               // 默认匹配
               'MATCH,漏网之鱼'
