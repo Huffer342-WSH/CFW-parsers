@@ -322,6 +322,9 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         'DOMAIN,esd.mathworks.com,DIRECT',
         'DOMAIN-SUFFIX,mathworks.com,默认代理',
 
+        // 小林Coding
+        'DOMAIN,cdn.xiaolincoding.com,默认代理',
+
         //=========================================================
         //              外部规则集
         //=========================================================
