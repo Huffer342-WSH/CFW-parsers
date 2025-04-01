@@ -325,6 +325,9 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         // 小林Coding
         'DOMAIN,cdn.xiaolincoding.com,默认代理',
 
+        // LinuxMirrors
+        'DOMAIN,linuxmirrors.cn,默认代理',
+
         //=========================================================
         //              外部规则集
         //=========================================================
