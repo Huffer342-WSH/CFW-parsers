@@ -19,16 +19,16 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         ],
         "enhanced-mode": "fake-ip",
         "fake-ip-range": "198.18.0.1/16",
-        "use-hosts": true,               
+        "use-hosts": true,
         nameserver: [
             "https://doh.pub/dns-query",
-            "https://dns.alidns.com/dns-query",  
+            "https://dns.alidns.com/dns-query",
             "202.96.128.86",
-            "114.114.114.114"               
+            "114.114.114.114"
         ],
         "proxy-server-nameserver": [
-            "https://1.1.1.1/dns-query",    
-            "https://8.8.8.8/dns-query"       
+            "https://1.1.1.1/dns-query",
+            "https://8.8.8.8/dns-query"
         ],
     };
 
@@ -167,34 +167,6 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
             path: './ruleset/reject.yaml',
             interval: 86400
         },
-        'icloud': {
-            type: 'http',
-            behavior: 'domain',
-            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt',
-            path: './ruleset/icloud.yaml',
-            interval: 86400
-        },
-        'apple': {
-            type: 'http',
-            behavior: 'domain',
-            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt',
-            path: './ruleset/apple.yaml',
-            interval: 86400
-        },
-        'google': {
-            type: 'http',
-            behavior: 'domain',
-            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/google.txt',
-            path: './ruleset/google.yaml',
-            interval: 86400
-        },
-        'proxy': {
-            type: 'http',
-            behavior: 'domain',
-            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt',
-            path: './ruleset/proxy.yaml',
-            interval: 86400
-        },
         'direct': {
             type: 'http',
             behavior: 'domain',
@@ -209,11 +181,18 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
             path: './ruleset/private.yaml',
             interval: 86400
         },
-        'gfw': {
+        'cncidr': {
+            type: 'http',
+            behavior: 'ipcidr',
+            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt',
+            path: './ruleset/cncidr.yaml',
+            interval: 86400
+        },
+        'proxy': {
             type: 'http',
             behavior: 'domain',
-            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt',
-            path: './ruleset/gfw.yaml',
+            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt',
+            path: './ruleset/proxy.yaml',
             interval: 86400
         },
         'tld-not-cn': {
@@ -223,25 +202,32 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
             path: './ruleset/tld-not-cn.yaml',
             interval: 86400
         },
+        'gfw': {
+            type: 'http',
+            behavior: 'domain',
+            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt',
+            path: './ruleset/gfw.yaml',
+            interval: 86400
+        },
+        'icloud': {
+            type: 'http',
+            behavior: 'domain',
+            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt',
+            path: './ruleset/icloud.yaml',
+            interval: 86400
+        },
+        'apple': {
+            type: 'http',
+            behavior: 'domain',
+            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt',
+            path: './ruleset/apple.yaml',
+            interval: 86400
+        },
         'telegramcidr': {
             type: 'http',
             behavior: 'ipcidr',
             url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt',
             path: './ruleset/telegramcidr.yaml',
-            interval: 86400
-        },
-        'cncidr': {
-            type: 'http',
-            behavior: 'ipcidr',
-            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt',
-            path: './ruleset/cncidr.yaml',
-            interval: 86400
-        },
-        'applications': {
-            type: 'http',
-            behavior: 'classical',
-            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/applications.txt',
-            path: './ruleset/applications.yaml',
             interval: 86400
         },
         'Microsoft': {
@@ -282,6 +268,7 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         //              覆盖规则集
         //=========================================================
         'DOMAIN-SUFFIX,haita.io,默认代理',
+        'DOMAIN,cdn.jsdelivr.net,DIRECT',
 
         //chatgpt
         'DOMAIN-SUFFIX,chatgpt.com,chatgpt',
@@ -310,8 +297,11 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         'DOMAIN-SUFFIX,blizzard.com,战网',
 
         //steam
+        'DOMAIN,api.steampowered.com,默认代理',
         'DOMAIN,steamcommunity.com,默认代理',
+        'PROCESS-NAME,steamwebhelper,默认代理',
         'PROCESS-NAME,steamwebhelper.exe,默认代理',
+        'PROCESS-NAME,steam,DIRECT',
         'PROCESS-NAME,steam.exe,DIRECT',
 
         //Matlab
@@ -331,26 +321,26 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         //=========================================================
         //              外部规则集
         //=========================================================
-        // 'RULE-SET,applications,DIRECT',
+        'RULE-SET,apple,苹果服务',
+        'RULE-SET,icloud,苹果服务',
+        'RULE-SET,Microsoft,微软服务',
+        'RULE-SET,telegramcidr,Telegram',
+
         'RULE-SET,reject,REJECT',
-        'RULE-SET,private,DIRECT',
         'RULE-SET,direct,DIRECT',
+        'RULE-SET,private,DIRECT',
         'RULE-SET,cncidr,DIRECT',
+
         'RULE-SET,proxy,默认代理',
         'RULE-SET,tld-not-cn,默认代理',
         'RULE-SET,gfw,默认代理',
-        'RULE-SET,apple,苹果服务',
-        'RULE-SET,Microsoft,微软服务',
-        'RULE-SET,telegramcidr,Telegram',
+
         'GEOIP,LAN,DIRECT',
         'GEOIP,CN,DIRECT',
 
         //=========================================================
         //              低于规则集
         //=========================================================
-
-        //steam
-
 
         //默认代理 
         'PROCESS-NAME,Clash for Windows,默认代理',
