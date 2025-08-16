@@ -15,14 +15,14 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         enable: true,
         ipv6: true,
         "default-nameserver": [
-            "223.5.5.5"
+            "223.5.5.5",
+            "119.29.29.29",
+            "114.114.114.114"
         ],
         "enhanced-mode": "fake-ip",
         "fake-ip-range": "198.18.0.1/16",
         "use-hosts": true,
         nameserver: [
-            "https://doh.pub/dns-query",
-            "https://dns.alidns.com/dns-query",
             "202.96.128.86",
             "114.114.114.114"
         ],
@@ -342,7 +342,7 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         //              低于规则集
         //=========================================================
 
-        //默认代理 
+        //默认代理
         'PROCESS-NAME,Clash for Windows,默认代理',
         'PROCESS-NAME,cfw,默认代理',
         'DOMAIN,esm.ubuntu.com,默认代理',
