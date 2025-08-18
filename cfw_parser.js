@@ -285,6 +285,7 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         'DOMAIN,plausible.midway.run,chatgpt',
 
         //Bing Copilot
+        'DOMAIN-SUFFIX,cn.bing.com,DIRECT',
         'DOMAIN-SUFFIX,bing.com,bing',
         'DOMAIN-KEYWORD,copilot,bing',
         'DOMAIN-SUFFIX,bingapis.com,bing',
