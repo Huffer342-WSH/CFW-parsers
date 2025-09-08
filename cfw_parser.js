@@ -268,7 +268,8 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         //              覆盖规则集
         //=========================================================
         'DOMAIN-SUFFIX,haita.io,默认代理',
-        'DOMAIN,cdn.jsdelivr.net,DIRECT',
+        'DOMAIN-SUFFIX,eehk.net,默认代理',
+        'DOMAIN-SUFFIX,subxiandan.top,默认代理',
 
         //chatgpt
         'DOMAIN-SUFFIX,chatgpt.com,chatgpt',
