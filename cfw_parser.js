@@ -270,6 +270,7 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         'DOMAIN-SUFFIX,haita.io,默认代理',
         'DOMAIN-SUFFIX,eehk.net,默认代理',
         'DOMAIN-SUFFIX,subxiandan.top,默认代理',
+        'DOMAIN,arthurchiao.art,默认代理',
 
         //chatgpt
         'DOMAIN-SUFFIX,chatgpt.com,chatgpt',
