@@ -383,6 +383,7 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         'DOMAIN-SUFFIX,acg.rip,默认代理',
         'DOMAIN-SUFFIX,sublimetext.com,默认代理',
         'DOMAIN-SUFFIX,zmyos.com,默认代理',
+        'DOMAIN-SUFFIX,arm.com,默认代理',
 
         // DIRECT
         'DOMAIN-SUFFIX,entitlenow.com,DIRECT',
