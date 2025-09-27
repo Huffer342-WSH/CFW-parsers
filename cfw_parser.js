@@ -321,6 +321,11 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         // LinuxMirrors
         'DOMAIN,linuxmirrors.cn,默认代理',
 
+        // 雀魂
+        'DOMAIN,game.maj-soul.com,默认代理',
+        'DOMAIN-KEYWORD,majsoul,DIRECT',
+        'DOMAIN-KEYWORD,maj-soul,DIRECT',
+
         //=========================================================
         //              外部规则集
         //=========================================================
