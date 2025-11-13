@@ -326,6 +326,10 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         'DOMAIN-KEYWORD,majsoul,DIRECT',
         'DOMAIN-KEYWORD,maj-soul,DIRECT',
 
+        // pytorch
+        'DOMAIN,download.pytorch.org,DIRECT',
+
+
         //=========================================================
         //              外部规则集
         //=========================================================
