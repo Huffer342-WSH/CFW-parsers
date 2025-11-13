@@ -329,6 +329,8 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         // pytorch
         'DOMAIN,download.pytorch.org,DIRECT',
 
+        // nvidia
+        'DOMAIN,developer.download.nvidia.com,DIRECT',
 
         //=========================================================
         //              外部规则集
