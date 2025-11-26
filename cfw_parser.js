@@ -14,6 +14,8 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
     newobj["dns"] = {
         enable: true,
         ipv6: true,
+
+        //用于解析"nameserver"中设置的dns服务器的域名，比如"https://dns.google/dns-query"需要解析才能使用
         "default-nameserver": [
             "223.5.5.5",
             "119.29.29.29",
@@ -22,13 +24,12 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         "enhanced-mode": "fake-ip",
         "fake-ip-range": "198.18.0.1/16",
         "use-hosts": true,
-        nameserver: [
-            "202.96.128.86",
-            "114.114.114.114"
-        ],
-        "proxy-server-nameserver": [
-            "https://1.1.1.1/dns-query",
-            "https://8.8.8.8/dns-query"
+
+        // dns服务器
+        "nameserver": [
+            "114.114.114.114",
+            "https://cloudflare-dns.com/dns-query",
+            "https://dns.google/dns-query"
         ],
     };
 
@@ -38,6 +39,24 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
 
     //======================  Proxy Group ======================
     newobj['proxy-groups'] = []
+
+    function filterHighMultiplierNodes(proxyNames) {
+        // 匹配：2倍、3倍… 或 x2、x3…（倍率大于 1 的）
+        const multiplierRegex = /(\d+)倍|[xX](\d+)/;
+
+        return proxyNames.filter(name => {
+            const match = name.match(multiplierRegex);
+
+            if (!match) return true; // 不含任何倍率 → 保留
+
+            // 获取倍率数字
+            const num = parseInt(match[1] || match[2], 10);
+
+            return num <= 1; // 只保留倍率 <= 1 的节点
+        });
+    }
+
+
     function createProxyGroups(obj, name, auxStrings) {
         // 直接在 filter 中提取 name 属性并过滤
         const proxyNames = obj.proxies
@@ -46,10 +65,12 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
 
         if (proxyNames.length > 0) {
             // 创建自动选择组
+            const filteredForAuto = filterHighMultiplierNodes(proxyNames);
+
             const autoProxyGroup = {
                 name: `${name}-自动选择`,
                 type: 'url-test',
-                proxies: proxyNames,
+                proxies: filteredForAuto,
                 url: 'http://www.gstatic.com/generate_204',
                 interval: 86400
             };
@@ -88,6 +109,8 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         return !proxy.includes('剩余') && !proxy.includes('套餐') && !proxy.includes('网址') && !proxy.includes('客服') && !proxy.includes('过滤');
     });
 
+    const proxiesAuto = filterHighMultiplierNodes(proxiesUseful);
+
     // 生成各个国家的节点组
     const proxiesCountries = [];//用于保存各个国家节点组的名称
     const proxyMatcher = [
@@ -110,32 +133,32 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         addProxyGroup(newobj, proxiesCountries, group.name, group.match);
     });
 
-    const proxiesDefault = ['默认代理', 'DIRECT', '负载均衡-轮询', '负载均衡-一致性哈希', ...proxiesCountries, ...proxiesUseful];
+    const proxiesDefault = ['默认代理', 'DIRECT', '负载均衡-轮询', '负载均衡-一致性哈希', ...proxiesCountries, ...proxiesRAW];
     const proxiesChatgpt = proxiesDefault.filter(proxy => !proxy.includes('香港')); //GPT节点组排除香港
 
     const proxyGroupConfigs = [
         {
             name: '自动选择',
             type: 'url-test',
-            proxies: proxiesUseful,
+            proxies: proxiesAuto,
             url: 'http://www.gstatic.com/generate_204',
-            interval: 86400,
+            interval: 3600,
         },
         {
             name: '负载均衡-轮询',
             type: 'load-balance',
-            proxies: proxiesUseful,
+            proxies: proxiesAuto,
             url: 'http://www.gstatic.com/generate_204',
-            interval: 86400,
+            interval: 3600,
             strategy: 'round-robin',
             lazy: true
         },
         {
             name: '负载均衡-一致性哈希',
             type: 'load-balance',
-            proxies: proxiesUseful,
+            proxies: proxiesAuto,
             url: 'http://www.gstatic.com/generate_204',
-            interval: 86400,
+            interval: 3600,
             strategy: 'consistent-hashing',
             lazy: true
         },
@@ -144,8 +167,8 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
             type: 'select',
             proxies: ['自动选择', 'DIRECT', '负载均衡-轮询', '负载均衡-一致性哈希', ...proxiesCountries, ...proxiesRAW],
         },
-        { name: 'chatgpt', type: 'select', proxies: [...proxiesChatgpt] },
-        { name: 'bing', type: 'select', proxies: [...proxiesChatgpt] },
+        { name: 'chatgpt', type: 'select', proxies: proxiesChatgpt },
+        { name: 'bing', type: 'select', proxies: proxiesChatgpt },
         { name: '战网', type: 'select', proxies: proxiesDefault },
         { name: 'Telegram', type: 'select', proxies: proxiesDefault },
         { name: '苹果服务', type: 'select', proxies: proxiesDefault },
@@ -273,6 +296,9 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         'DOMAIN,arthurchiao.art,默认代理',
         'DOMAIN,su.anywayfosec.xyz,默认代理',
         'DOMAIN-SUFFIX,itzmx.com,默认代理',
+        'DOMAIN,999.ts1110.top,默认代理',
+        'DOMAIN-SUFFIX,taishan2025.icu,默认代理',
+        'DOMAIN-SUFFIX,taishan.pro,默认代理',
 
         //chatgpt
         'DOMAIN-SUFFIX,chatgpt.com,chatgpt',
