@@ -124,8 +124,14 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         { name: '节点组-法国', match: ['法国', 'FR'] },
         { name: '节点组-英国', match: ['英国', 'UK'] },
         { name: '节点组-德国', match: ['德国', 'DE'] },
+        { name: '节点组-加拿大', match: ['加拿大', 'CA'] },
         { name: '节点组-意大利', match: ['意大利', 'IT'] },
         { name: '节点组-俄罗斯', match: ['俄罗斯', 'RU'] },
+        { name: '节点组-土耳其', match: ['土耳其', 'TR'] },
+        { name: '节点组-印度', match: ['印度', 'IN'] },
+        { name: '节点组-阿根廷', match: ['阿根廷', 'AR'] },
+        { name: '节点组-越南', match: ['越南', 'VN'] },
+        { name: '节点组-尼日利亚', match: ['尼日利亚', 'NG'] },
     ];
 
     // 遍历数组调用 addProxyGroup
