@@ -334,11 +334,13 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         'DOMAIN-SUFFIX,blizzard.com,战网',
 
         //steam
+        'DOMAIN-SUFFIX,alipay.com,DIRECT', // steam跳转支付直连
+        'DOMAIN-SUFFIX,alipayobjects.com,DIRECT',
         'DOMAIN,api.steampowered.com,默认代理',
         'DOMAIN,steamcommunity.com,默认代理',
-        'PROCESS-NAME,steamwebhelper,默认代理',
+        'PROCESS-NAME,steamwebhelper,默认代理', // steam界面是个浏览器，走代理
         'PROCESS-NAME,steamwebhelper.exe,默认代理',
-        'PROCESS-NAME,steam,DIRECT',
+        'PROCESS-NAME,steam,DIRECT',  // 下载游戏是steam.exe负责的，直连
         'PROCESS-NAME,steam.exe,DIRECT',
 
         //Matlab
