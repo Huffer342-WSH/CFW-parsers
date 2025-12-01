@@ -305,6 +305,7 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         'DOMAIN,999.ts1110.top,默认代理',
         'DOMAIN-SUFFIX,taishan2025.icu,默认代理',
         'DOMAIN-SUFFIX,taishan.pro,默认代理',
+        'DOMAIN,cdn.ramenpay.net,默认代理',
 
         //chatgpt
         'DOMAIN-SUFFIX,chatgpt.com,chatgpt',
