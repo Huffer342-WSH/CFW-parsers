@@ -3,6 +3,8 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
     const newobj = {}
     //======================  开关 ======================
     const enable_replace_rules = true
+    const autoSelectInterval = 600
+
 
     //======================  固定配置 ======================
     newobj["mixed-port"] = 7890;
@@ -72,7 +74,7 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
                 type: 'url-test',
                 proxies: filteredForAuto,
                 url: 'http://www.gstatic.com/generate_204',
-                interval: 86400
+                interval: autoSelectInterval
             };
 
             // 创建选择组
@@ -148,14 +150,14 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
             type: 'url-test',
             proxies: proxiesAuto,
             url: 'http://www.gstatic.com/generate_204',
-            interval: 3600,
+            interval: autoSelectInterval,
         },
         {
             name: '负载均衡-轮询',
             type: 'load-balance',
             proxies: proxiesAuto,
             url: 'http://www.gstatic.com/generate_204',
-            interval: 3600,
+            interval: autoSelectInterval,
             strategy: 'round-robin',
             lazy: true
         },
@@ -164,7 +166,7 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
             type: 'load-balance',
             proxies: proxiesAuto,
             url: 'http://www.gstatic.com/generate_204',
-            interval: 3600,
+            interval: autoSelectInterval,
             strategy: 'consistent-hashing',
             lazy: true
         },
