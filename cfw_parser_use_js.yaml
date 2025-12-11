@@ -1,3 +1,0 @@
-parsers:
-  - url: https://example.com/profile.yaml
-    file: "The-path-to-file/cfw_parser.js"
