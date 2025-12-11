@@ -18,21 +18,25 @@ function main(config) {
     // -----------------------------------
     config["dns"] = {
         enable: true,
-        ipv6: true,
+        ipv6: false,
         "enhanced-mode": "fake-ip",     // 启用 Fake-IP 模式
         "fake-ip-range": "198.18.0.1/16", // Fake-IP 地址范围
 
+        // 阿里DNS和海外DNS基本一致
+        // UDP的海外DNS基本都被劫持了，如8.8.8.8, 1.1.1.1等，要使用DoT和DoH的
+
         // 用于解析DNS的DNS （只能用IP）
-        "default-nameserver": ["223.5.5.5", "119.29.29.29"],
+        "default-nameserver": ["223.5.5.5", "tls://1.1.1.1"],
 
-        // 用于解析节点域名的DNS
-        "proxy-server-nameserver": ['https://doh.pub/dns-query', 'https://dns.google/resolve'],
+        // 用于解析节点域名的DNS，使用海外DNS
+        "proxy-server-nameserver": ['223.5.5.5', 'https://doh.dns.sb/dns-query', 'tls://1.1.1.1'],
 
-        // 解析代理的DNS
-        "nameserver": ['https://doh.pub/dns-query', 'https://dns.alidns.com/dns-query'],
+        // 域名匹配到直连的使用`nameserver`和`fallback`中设置的DNS查询，如果符合`fallback-filter`则只使用`fallback`中的
+        "nameserver": ['223.5.5.5', 'https://doh.pub/dns-query', 'https://dns.alidns.com/dns-query'],
 
-        // 备用 DNS 服务器 (Fallback，用于解析 nameserver 无法解析的域名)
-        fallback: [],//'https://dns.google/resolve', 'https://dns.cloudflare.com/dns-query'
+        // fallback主要用于应对一个被污染的外网URL意外走了Direct，可以通过fallback查询到真实IP并通过IP规则重新令其走代理
+        // 所以如果没有针对IP设置是否走代理，fallback就没有用
+        fallback: [],//'https://doh.dns.sb/dns-query', 'tls://1.1.1.1', 'https://cloudflare-dns.com/dns-query'
         "fallback-filter": {
             geoip: true,
             ipcidr: [
@@ -40,12 +44,8 @@ function main(config) {
                 "0.0.0.0/32"
             ],
             "geoip-code": "CN",
-            domain: [
-                "+.google.com",
-                "+.facebook.com",
-                "+.youtube.com"
-            ]
         },
+
         "fake-ip-filter": [
             "*",
             "+.lan",
