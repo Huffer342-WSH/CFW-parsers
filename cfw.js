@@ -427,28 +427,6 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
     // ===================================
     const newRules = [
         // -----------------------------------
-        // 0. 内部 IP 和局域网 (DIRECT) - 优先级最高
-        // -----------------------------------
-        'IP-CIDR,0.0.0.0/8,DIRECT,no-resolve',
-        'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve',
-        'IP-CIDR,100.64.0.0/10,DIRECT,no-resolve',
-        'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve',
-        'IP-CIDR,169.254.0.0/16,DIRECT,no-resolve',
-        'IP-CIDR,172.16.0.0/12,DIRECT,no-resolve',
-        'IP-CIDR,192.0.0.0/24,DIRECT,no-resolve',
-        'IP-CIDR,192.0.2.0/24,DIRECT,no-resolve',
-        'IP-CIDR,192.88.99.0/24,DIRECT,no-resolve',
-        'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve',
-        'IP-CIDR,198.18.0.0/15,DIRECT,no-resolve', // Fake-IP Range
-        'IP-CIDR,198.51.100.0/24,DIRECT,no-resolve',
-        'IP-CIDR,203.0.113.0/24,DIRECT,no-resolve',
-        'IP-CIDR,224.0.0.0/3,DIRECT,no-resolve',
-        'IP-CIDR,::/127,DIRECT,no-resolve', // IPv6
-        'IP-CIDR,fc00::/7,DIRECT,no-resolve', // IPv6
-        'IP-CIDR,fe80::/10,DIRECT,no-resolve', // IPv6
-        'IP-CIDR,ff00::/8,DIRECT,no-resolve', // IPv6
-
-        // -----------------------------------
         // 1. 强制直连/代理规则（覆盖规则集）
         // -----------------------------------
 
@@ -522,6 +500,7 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         'DOMAIN-KEYWORD,asasmr,DIRECT',
         'DOMAIN-KEYWORD,starrycoding,DIRECT',
         'DOMAIN-KEYWORD,eriktse,DIRECT',
+
         // -----------------------------------
         // 2. 外部规则集调用（Rule-Set Providers）
         // -----------------------------------

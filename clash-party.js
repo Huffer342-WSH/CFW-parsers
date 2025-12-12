@@ -222,20 +222,20 @@ function main(config) {
             proxies: ['自动选择', 'DIRECT', '负载均衡-轮询', '负载均衡-一致性哈希', ...proxyNameCountries, ...proxyNameRAW]
         },
         {
-            name: 'OpenAI',
+            name: 'OpenAI & Genimi',
             icon: 'https://cdn.jsdelivr.net/gh/Huffer342-WSH/Clash-for-Windwos-parsers@main/icon/OpenAI.png',
             type: 'select',
             proxies: proxyNameAI
         },
+        // {
+        //     name: 'Gemini',
+        //     icon: 'https://cdn.jsdelivr.net/gh/Huffer342-WSH/Clash-for-Windwos-parsers@main/icon/Gemini.png',
+        //     type: 'select',
+        //     proxies: proxyNameAI
+        // },
         {
-            name: 'Gemini',
-            icon: 'https://cdn.jsdelivr.net/gh/Huffer342-WSH/Clash-for-Windwos-parsers@main/icon/Gemini.png',
-            type: 'select',
-            proxies: proxyNameAI
-        },
-        {
-            name: 'Bing',
-            icon: 'https://cdn.jsdelivr.net/gh/Huffer342-WSH/Clash-for-Windwos-parsers@main/icon/Bing.png',
+            name: 'Microsoft Copilot',
+            icon: 'https://cdn.jsdelivr.net/gh/Huffer342-WSH/Clash-for-Windwos-parsers@main/icon/Microsoft%20Copilot.png',
             type: 'select',
             proxies: proxyNameCommon
         },
@@ -254,6 +254,12 @@ function main(config) {
         {
             name: '苹果服务',
             icon: 'https://cdn.jsdelivr.net/gh/Huffer342-WSH/Clash-for-Windwos-parsers@main/icon/Apple.png',
+            type: 'select',
+            proxies: proxyNameCommon
+        },
+        {
+            name: '微软服务 - CN',
+            icon: 'https://cdn.jsdelivr.net/gh/Huffer342-WSH/Clash-for-Windwos-parsers@main/icon/Microsoft.png',
             type: 'select',
             proxies: proxyNameCommon
         },
@@ -323,99 +329,75 @@ function main(config) {
 
     // 定义外部规则集，方便集中管理和更新
     config['rule-providers'] = {
-        // 拒绝规则集
+        // 额外添加
+        'myproxy': {
+            type: 'http',
+            behavior: 'domain',
+            format: 'text',
+            url: 'https://cdn.jsdelivr.net/gh/Huffer342-WSH/Clash-for-Windwos-parsers@main/rules/proxy.list',
+            interval: rulesetUpdateInterval
+        },
+
+        // Loyalsoldier
         'reject': {
             type: 'http',
             behavior: 'domain',
             url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt',
-            path: './ruleset/reject.yaml',
             interval: rulesetUpdateInterval // 每天更新
         },
-        // 直连规则集 (国内/常见)
-        'direct': {
-            type: 'http',
-            behavior: 'domain',
-            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt',
-            path: './ruleset/direct.yaml',
-            interval: rulesetUpdateInterval
-        },
-        // 私有网络/内部 IP 规则集
-        'private': {
-            type: 'http',
-            behavior: 'domain',
-            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/private.txt',
-            path: './ruleset/private.yaml',
-            interval: rulesetUpdateInterval
-        },
-        // 国内 IP CIDR 规则集
-        'cncidr': {
-            type: 'http',
-            behavior: 'ipcidr',
-            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt',
-            path: './ruleset/cncidr.yaml',
-            interval: rulesetUpdateInterval
-        },
-        // 代理规则集 (常用国外网站)
         'proxy': {
             type: 'http',
             behavior: 'domain',
             url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt',
-            path: './ruleset/proxy.yaml',
             interval: rulesetUpdateInterval
         },
-        // GFW 列表规则集
-        'gfw': {
+        'direct': {
             type: 'http',
             behavior: 'domain',
-            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt',
-            path: './ruleset/gfw.yaml',
+            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt',
             interval: rulesetUpdateInterval
         },
-        // 苹果服务相关规则集
-        'icloud': {
+        'private': {
             type: 'http',
             behavior: 'domain',
-            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt',
-            path: './ruleset/icloud.yaml',
+            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/private.txt',
             interval: rulesetUpdateInterval
         },
-        'apple': {
-            type: 'http',
-            behavior: 'domain',
-            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt',
-            path: './ruleset/apple.yaml',
-            interval: rulesetUpdateInterval
-        },
-        // Telegram IP CIDR 规则集
-        'telegramcidr': {
+
+
+        'telegram-ip': {
             type: 'http',
             behavior: 'ipcidr',
-            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt',
-            path: './ruleset/telegramcidr.yaml',
+            format: 'text',
+            url: 'https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/telegram.list',
             interval: rulesetUpdateInterval
         },
-        // 微软服务规则集
+        'Microsoft-CN': {
+            type: 'http',
+            behavior: 'domain',
+            format: 'text',
+            url: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/microsoft%40cn.list",
+            interval: rulesetUpdateInterval
+        },
         'Microsoft': {
             type: 'http',
-            behavior: 'classical',
-            url: "https://cdn.jsdelivr.net/gh/zhanyeye/clash-rules-lite@release/microsoft-rules.txt",
-            path: './ruleset/microsoft-rules.yaml',
+            behavior: 'domain',
+            format: 'text',
+            url: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/microsoft.list",
             interval: rulesetUpdateInterval
         },
-        // Gemini 服务规则集
         'Gemini': {
             type: 'http',
-            behavior: 'classical',
-            url: "https://cdn.jsdelivr.net/gh/Huffer342-WSH/Clash-for-Windwos-parsers@main/rules/Gemini.yaml",
-            path: './ruleset/Gemini.yaml',
+            behavior: 'domain',
+            format: 'text',
+            url: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/google-gemini.list",
             interval: rulesetUpdateInterval
         },
-        // OpenAI 服务规则集
         'OpenAI': {
             type: 'http',
-            behavior: 'classical',
-            url: "https://cdn.jsdelivr.net/gh/Huffer342-WSH/Clash-for-Windwos-parsers@main/rules/OpenAI.yaml",
-            path: './ruleset/OpenAI.yaml',
+            behavior: 'domain',
+            format: 'text',
+            url: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/openai.list",
             interval: rulesetUpdateInterval
         }
     };
@@ -425,37 +407,11 @@ function main(config) {
     // ===================================
     const newRules = [
         // -----------------------------------
-        // 0. 内部 IP 和局域网 (DIRECT) - 优先级最高
-        // -----------------------------------
-        'IP-CIDR,0.0.0.0/8,DIRECT,no-resolve',
-        'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve',
-        'IP-CIDR,100.64.0.0/10,DIRECT,no-resolve',
-        'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve',
-        'IP-CIDR,169.254.0.0/16,DIRECT,no-resolve',
-        'IP-CIDR,172.16.0.0/12,DIRECT,no-resolve',
-        'IP-CIDR,192.0.0.0/24,DIRECT,no-resolve',
-        'IP-CIDR,192.0.2.0/24,DIRECT,no-resolve',
-        'IP-CIDR,192.88.99.0/24,DIRECT,no-resolve',
-        'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve',
-        'IP-CIDR,198.18.0.0/15,DIRECT,no-resolve', // Fake-IP Range
-        'IP-CIDR,198.51.100.0/24,DIRECT,no-resolve',
-        'IP-CIDR,203.0.113.0/24,DIRECT,no-resolve',
-        'IP-CIDR,224.0.0.0/3,DIRECT,no-resolve',
-        'IP-CIDR,::/127,DIRECT,no-resolve', // IPv6
-        'IP-CIDR,fc00::/7,DIRECT,no-resolve', // IPv6
-        'IP-CIDR,fe80::/10,DIRECT,no-resolve', // IPv6
-        'IP-CIDR,ff00::/8,DIRECT,no-resolve', // IPv6
-
-        // -----------------------------------
         // 1. 强制直连/代理规则（覆盖规则集）
         // -----------------------------------
 
-        // Bing/Copilot 规则
-        'DOMAIN-SUFFIX,cn.bing.com,DIRECT',      // 国内 Bing 直连
-        'DOMAIN-SUFFIX,bing.com,Bing',           // 国际 Bing 走 Bing 代理组
-        'DOMAIN-KEYWORD,copilot,Bing',           // Copilot 相关走 Bing 代理组
-        'DOMAIN-SUFFIX,bingapis.com,Bing',
-        'DOMAIN-SUFFIX,bingparachute.com,Bing',
+        // Microsoft Copilot 规则
+        'DOMAIN-KEYWORD,copilot.microsoft.com,Microsoft Copilot',
 
         // 战网
         'PROCESS-NAME,Battle.net,战网',
@@ -490,21 +446,6 @@ function main(config) {
         'DOMAIN-KEYWORD,majsoul,DIRECT',
         'DOMAIN-KEYWORD,maj-soul,DIRECT',
 
-        // 走代理的域名
-        'DOMAIN,arthurchiao.art,默认代理',
-        'DOMAIN,su.anywayfosec.xyz,默认代理',
-        'DOMAIN,999.ts1110.top,默认代理',
-        'DOMAIN,cdn.ramenpay.net,默认代理',
-        'DOMAIN,cdn.xiaolincoding.com,默认代理',
-        'DOMAIN,linuxmirrors.cn,默认代理',
-        'DOMAIN-SUFFIX,windsurf.com,默认代理',
-        'DOMAIN-SUFFIX,taishan2025.icu,默认代理',
-        'DOMAIN-SUFFIX,taishan.pro,默认代理',
-        'DOMAIN-SUFFIX,haita.io,默认代理',
-        'DOMAIN-SUFFIX,eehk.net,默认代理',
-        'DOMAIN-SUFFIX,subxiandan.top,默认代理',
-        'DOMAIN-SUFFIX,itzmx.com,默认代理',
-
         // 直连的域名
         'DOMAIN,download.pytorch.org,DIRECT',
         'DOMAIN,developer.download.nvidia.com,DIRECT',
@@ -520,27 +461,28 @@ function main(config) {
         'DOMAIN-KEYWORD,asasmr,DIRECT',
         'DOMAIN-KEYWORD,starrycoding,DIRECT',
         'DOMAIN-KEYWORD,eriktse,DIRECT',
+
         // -----------------------------------
         // 2. 外部规则集调用（Rule-Set Providers）
         // -----------------------------------
         // 服务专用组规则
-        'RULE-SET,apple,苹果服务',
-        'RULE-SET,icloud,苹果服务',
+        'RULE-SET,Microsoft-CN,微软服务 - CN',
         'RULE-SET,Microsoft,微软服务',
-        'RULE-SET,telegramcidr,Telegram',
-        'RULE-SET,Gemini,Gemini',
-        'RULE-SET,OpenAI,OpenAI',
+        'RULE-SET,Gemini,OpenAI & Genimi',
+        'RULE-SET,OpenAI,OpenAI & Genimi',
+
 
         // 通用代理
+        'RULE-SET,myproxy,默认代理',
+        'RULE-SET,private,DIRECT',
+        'RULE-SET,direct,默认代理',
         'RULE-SET,proxy,默认代理',
-        'RULE-SET,gfw,默认代理',
+        'RULE-SET,reject,REJECT',
 
-        'RULE-SET,reject,REJECT',        // 广告/恶意域名
-        'RULE-SET,direct,DIRECT',        // 通用直连
-        'RULE-SET,private,DIRECT',       // 私有网络直连
-        'RULE-SET,cncidr,DIRECT',        // 国内 IP 直连
-        'GEOIP,LAN,DIRECT', // 局域网 IP 直连
-        'GEOIP,CN,DIRECT',  // 中国 IP 直连
+        // IP
+        'RULE-SET,telegram-ip,Telegram',
+        'GEOIP,LAN,DIRECT',
+        'GEOIP,CN,DIRECT',
 
         'MATCH,漏网之鱼' // 任何未匹配的流量都走 '漏网之鱼' 代理组
     ];
