@@ -20,21 +20,25 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
     // -----------------------------------
     config["dns"] = {
         enable: true,
-        ipv6: true,
+        ipv6: false,
         "enhanced-mode": "fake-ip",     // 启用 Fake-IP 模式
         "fake-ip-range": "198.18.0.1/16", // Fake-IP 地址范围
 
+        // 阿里DNS和海外DNS基本一致
+        // UDP的海外DNS基本都被劫持了，如8.8.8.8, 1.1.1.1等，要使用DoT和DoH的
+
         // 用于解析DNS的DNS （只能用IP）
-        "default-nameserver": ["223.5.5.5", "119.29.29.29"],
+        "default-nameserver": ["223.5.5.5", "tls://1.1.1.1"],
 
-        // 用于解析节点域名的DNS
-        "proxy-server-nameserver": ['https://doh.pub/dns-query', 'https://dns.google/resolve'],
+        // 用于解析节点域名的DNS，使用海外DNS
+        "proxy-server-nameserver": ['223.5.5.5', 'https://doh.dns.sb/dns-query', 'tls://1.1.1.1'],
 
-        // 解析代理的DNS
-        "nameserver": ['https://doh.pub/dns-query', 'https://dns.alidns.com/dns-query'],
+        // 域名匹配到直连的使用`nameserver`和`fallback`中设置的DNS查询，如果符合`fallback-filter`则只使用`fallback`中的
+        "nameserver": ['223.5.5.5', 'https://doh.pub/dns-query', 'https://dns.alidns.com/dns-query'],
 
-        // 备用 DNS 服务器 (Fallback，用于解析 nameserver 无法解析的域名)
-        fallback: [],//'https://dns.google/resolve', 'https://dns.cloudflare.com/dns-query'
+        // fallback主要用于应对一个被污染的外网URL意外走了Direct，可以通过fallback查询到真实IP并通过IP规则重新令其走代理
+        // 所以如果没有针对IP设置是否走代理，fallback就没有用
+        fallback: [],//'https://doh.dns.sb/dns-query', 'tls://1.1.1.1', 'https://cloudflare-dns.com/dns-query'
         "fallback-filter": {
             geoip: true,
             ipcidr: [
@@ -42,12 +46,8 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
                 "0.0.0.0/32"
             ],
             "geoip-code": "CN",
-            domain: [
-                "+.google.com",
-                "+.facebook.com",
-                "+.youtube.com"
-            ]
         },
+
         "fake-ip-filter": [
             "*",
             "+.lan",
@@ -62,149 +62,156 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
     };
 
     // ===================================
-    // 辅助函数定义（Helper Functions）
+    //  分类国家节点组 - 辅助函数
     // ===================================
 
-    /**
-    * 过滤掉名称中包含高倍率（大于 1 倍）的代理节点。
-    * @param {string[]} proxyNames 所有代理节点名称列表。
-    * @returns {string[]} 过滤后的节点名称列表（只保留 1 倍及以下的节点）。
+   /**
+    * 过滤掉高倍率节点（>1倍），保留平价节点
     */
     function filterHighMultiplierNodes(proxyNames) {
-        // 通用正则：数字 + 可选小数 + 可选空格 + (倍/x/X)
-        // 或者： (倍/x/X) + 可选空间 + 数字
-        // 两种排列顺序都支持
         const regex = /(\d+\.?\d*)\s*[倍xX]|[倍xX]\s*(\d+\.?\d*)/;
-
         return proxyNames.filter(name => {
             const match = name.match(regex);
-
-            // 没找到倍率 → 当成 1 倍，保留
             if (!match) return true;
-
-            // match[1] 表示数字在前的情况，如 "2x"
-            // match[2] 表示数字在后的情况，如 "x2"
-            const numStr = match[1] || match[2];
-            const num = parseFloat(numStr);
-
-            return num <= 1;  // 只保留倍率 ≤ 1
+            const num = parseFloat(match[1] || match[2]);
+            return num <= 1;
         });
     }
 
     /**
-     * 根据关键字创建国家/地区代理组（自动选择组和手动选择组）。
-     * @param {string[]} proxiesList 所有代理节点名称列表。
-     * @param {string} name 代理组的名称。
-     * @param {string[]} auxStrings 用于匹配节点名称的关键字列表。
-     * @returns {{autoProxyGroup: object, proxyGroup: object} | null} 创建的两个代理组或 null。
+     * 创建标准化的国家/地区代理组
+     * @param {string[]} proxiesList 所有可用节点名称
+     * @param {object} matcher 配置项 { name, emoji, match }
      */
-    function createProxyGroups(proxiesList, name, auxStrings) {
-        // 过滤出包含关键字的节点名称
-        const proxyNames = proxiesList.filter(proxyName =>
-            auxStrings.some(aux => proxyName.includes(aux))
+    function createProxyGroups(proxiesList, matcher) {
+        const { name, emoji, match: keywords } = matcher;
+
+        // 筛选节点：只要包含 match 中的任意一个关键字
+        const matchedProxies = proxiesList.filter(pName =>
+            keywords.some(key => pName.includes(key))
         );
 
-        if (proxyNames.length > 0) {
-            // 过滤掉高倍率节点，用于 '自动选择' 组
-            const filteredForAuto = filterHighMultiplierNodes(proxyNames);
+        // 如果该地区没有匹配到节点，直接返回 null
+        if (matchedProxies.length === 0) return null;
 
-            // 1. 创建 URL-Test 自动选择组
-            const autoProxyGroup = {
-                name: `自动选择-${name}`,
-                type: 'url-test',
-                proxies: filteredForAuto,
-                url: 'http://www.gstatic.com/generate_204', // 测速 URL
-                interval: autoSelectInterval             // 测速间隔
-            };
+        // 定义组名称格式
+        const manualGroupName = `${emoji} ${name}`;          // 例: 🇺🇸 美国
+        const autoGroupName = `♻️${emoji}${name}-自动选择`;   // 例: ♻️🇺🇸美国-自动选择
 
-            // 2. 创建 Select 手动选择组
-            const proxyGroup = {
-                name: name,
-                type: 'select',
-                proxies: [`自动选择-${name}`, ...proxyNames] // 包含自动选择组和所有节点
-            };
+        // 1. 自动选择组 (Url-Test) - 仅使用低倍率节点
+        const autoGroup = {
+            name: autoGroupName,
+            type: 'url-test',
+            proxies: filterHighMultiplierNodes(matchedProxies),
+            url: 'http://www.gstatic.com/generate_204',
+            interval: 300,
+            tolerance: 50
+        };
 
-            // 返回这两个组
-            return { autoProxyGroup, proxyGroup };
-        }
-        return null; // 没有匹配到节点则返回 null
-    }
+        // 2. 手动选择组 (Select) - 包含自动组 + 所有匹配节点
+        const manualGroup = {
+            name: manualGroupName,
+            type: 'select',
+            proxies: [autoGroupName, ...matchedProxies]
+        };
 
-    /**
-     * 调用 createProxyGroups 并将生成的代理组添加到配置列表中。
-     * @param {object[]} targetList 存放代理组的总列表。
-     * @param {string[]} listCountry 存放生成的国家组名称的列表。
-     * @param {string} name 代理组的名称。
-     * @param {string[]} auxStrings 用于匹配节点名称的关键字列表。
-     * @param {string[]} allProxyNames 所有代理节点名称列表。
-     */
-    function addProxyGroup(targetList, listCountry, name, auxStrings, allProxyNames) {
-        const groupTemp = createProxyGroups(allProxyNames, name, auxStrings);
-        if (groupTemp) {
-            const { autoProxyGroup, proxyGroup } = groupTemp;
-            targetList.push(autoProxyGroup, proxyGroup); // 添加两个组
-            listCountry.push(name); // 记录国家组名称
-        }
+        return {
+            autoGroup,     // 代理组配置对象
+            manualGroup,   // 代理组配置对象
+            names: {       // 返回名称用于后续列表生成
+                manual: manualGroupName,
+                auto: autoGroupName,
+                rawName: name // 用于 AI 筛选对比
+            }
+        };
     }
 
     // ===================================
-    // 代理组生成逻辑（Proxy Group Logic）
+    //  分类国家节点组 - 配置定义
     // ===================================
 
-    // 获取所有代理节点的原始名称
+    // 获取所有节点名称并过滤无效节点
     const proxyNameRAW = (config.proxies || []).map(p => p.name);
-
-    // 过滤掉不作为代理使用的特殊节点（如：剩余流量、套餐说明、网址、客服等）
-    const proxyNameUseful = proxyNameRAW.filter(proxy => {
-        return !proxy.includes('剩余') && !proxy.includes('套餐') && !proxy.includes('网址') && !proxy.includes('客服') && !proxy.includes('过滤') && !proxy.includes('境外');
-    });
-
-    // 自动选择组的节点列表（仅使用平价节点，即过滤掉高倍率节点）
+    const proxyNameUseful = proxyNameRAW.filter(n => !/剩余|套餐|网址|客服|过滤|时间|境外/.test(n));
     const proxyNameAuto = filterHighMultiplierNodes(proxyNameUseful);
 
-    // -----------------------------------
-    // 国家/地区节点组配置
-    // -----------------------------------
+    // 定义匹配规则：name(核心名), emoji(旗帜), match(匹配关键字)
     const proxyMatcher = [
-        { name: '节点组-美国', match: ['美国', 'US', '🇺🇸'] },
-        { name: '节点组-香港', match: ['香港', 'HK', '🇭🇰'] },
-        { name: '节点组-台湾', match: ['台湾', 'TW'] },
-        { name: '节点组-日本', match: ['日本', 'JP'] },
-        { name: '节点组-韩国', match: ['韩国', 'KR'] },
-        { name: '节点组-澳大利亚', match: ['澳大利亚', 'AU'] },
-        { name: '节点组-新加坡', match: ['新加坡', 'SG'] },
-        { name: '节点组-法国', match: ['法国', 'FR'] },
-        { name: '节点组-英国', match: ['英国', 'UK'] },
-        { name: '节点组-德国', match: ['德国', 'DE'] },
-        { name: '节点组-加拿大', match: ['加拿大', 'CA'] },
-        { name: '节点组-意大利', match: ['意大利', 'IT'] },
-        { name: '节点组-俄罗斯', match: ['俄罗斯', 'RU'] },
-        { name: '节点组-土耳其', match: ['土耳其', 'TR'] },
-        { name: '节点组-印度', match: ['印度', 'IN'] },
-        { name: '节点组-阿根廷', match: ['阿根廷', 'AR'] },
-        { name: '节点组-越南', match: ['越南', 'VN'] },
-        { name: '节点组-尼日利亚', match: ['尼日利亚', 'NG'] },
+        { name: '美国', emoji: '🇺🇸', match: ['美国', 'US', 'States', '🇺🇸'] },
+        { name: '香港', emoji: '🇭🇰', match: ['香港', 'HK', 'Hong', '🇭🇰'] },
+        { name: '台湾', emoji: '🇹🇼', match: ['台湾', 'TW', 'Tai', '🇹🇼'] },
+        { name: '日本', emoji: '🇯🇵', match: ['日本', 'JP', 'Japan', '🇯🇵'] },
+        { name: '新加坡', emoji: '🇸🇬', match: ['新加坡', 'SG', 'Singapore', '🇸🇬'] },
+        { name: '韩国', emoji: '🇰🇷', match: ['韩国', 'KR', 'Korea', '🇰🇷'] },
+        { name: '英国', emoji: '🇬🇧', match: ['英国', 'UK', 'Kingdom', '🇬🇧'] },
+        { name: '法国', emoji: '🇫🇷', match: ['法国', 'FR', 'France', '🇫🇷'] },
+        { name: '德国', emoji: '🇩🇪', match: ['德国', 'DE', 'Germany', '🇩🇪'] },
+        { name: '澳大利亚', emoji: '🇦🇺', match: ['澳大利亚', 'AU', 'Australia', '🇦🇺'] },
+        { name: '加拿大', emoji: '🇨🇦', match: ['加拿大', 'CA', 'Canada', '🇨🇦'] },
+        { name: '土耳其', emoji: '🇹🇷', match: ['土耳其', 'TR', 'Turkey', '🇹🇷'] },
+        { name: '阿根廷', emoji: '🇦🇷', match: ['阿根廷', 'AR', 'Argentina', '🇦🇷'] },
+        { name: '印度', emoji: '🇮🇳', match: ['印度', 'IN', 'India', '🇮🇳'] },
+        { name: '越南', emoji: '🇻🇳', match: ['越南', 'VN', 'Vietnam', '🇻🇳'] },
+        { name: '俄罗斯', emoji: '🇷🇺', match: ['俄罗斯', 'RU', 'Russia', '🇷🇺'] },
     ];
 
-    const proxyNameCountries = []; // 存放所有生成的国家/地区组名称
-    const proxyGroupCountriesFull = []; // 存放所有生成的国家/地区代理组（包含自动选择组）
+    // 定义 AI 支持的地区白名单 (必须与 proxyMatcher 中的 name 一致)
+    // 逻辑：只有这些地区的“自动选择”组会被加入 AI 策略
+    const aiSupportedNames = ['美国', '日本', '新加坡', '台湾', '英国', '韩国', '法国', '德国'];
 
-    // 循环生成所有国家/地区代理组
-    proxyMatcher.forEach(group => {
-        // 使用原始节点名称列表来匹配，避免遗漏
-        addProxyGroup(proxyGroupCountriesFull, proxyNameCountries, group.name, group.match, proxyNameRAW);
+    // ===================================
+    //  分类国家节点组 - 执行
+    // ===================================
+
+    const proxyGroupAuto = [];
+    const proxyGroupManual = [];
+
+    const proxyNameCountries = [];      // 存放所有国家的手动组名称
+    const proxyNameAIAuto = [];         // 存放 AI 专用的节点，包含适用于AI的节点
+    const proxyNameAI = ['自动选择-AI']; // 给Gemini等使用，包含：'自动选择-AI', 适用于AI的国家组, 适用于AI的节点
+
+    // 遍历匹配规则生成组
+    proxyMatcher.forEach(matcher => {
+        const result = createProxyGroups(proxyNameUseful, matcher);
+
+        if (result) {
+            const { autoGroup, manualGroup, names } = result;
+
+            // 1. 添加生成的组对象到列表
+            proxyGroupAuto.push(autoGroup);
+            proxyGroupManual.push(manualGroup);
+
+            // 2. 记录手动组名称 (e.g. "🇺🇸 美国")
+            proxyNameCountries.push(names.manual);
+
+            // 3. AI 策略筛选：如果该国家在 AI 白名单中，提取其“自动选择组”
+            if (aiSupportedNames.includes(names.rawName)) {
+                // 这里存入的是: "♻️ 自动-🇺🇸 美国"
+                proxyNameAI.push(names.auto);
+                proxyNameAIAuto.push(...autoGroup.proxies)
+            }
+        }
     });
 
-    // 默认节点列表：包含自动选择、直连、负载均衡、所有国家组和所有原始节点
-    const proxyNameCommon = ['默认代理', 'DIRECT', '负载均衡-轮询', '负载均衡-一致性哈希', ...proxyNameCountries, ...proxyNameRAW];
 
-    // AI 专用节点列表：排除香港节点（香港节点对某些 AI 服务可能不友好）
-    const proxyNameAIAuto = proxyNameAuto.filter(proxy => !proxy.includes('香港') && !proxy.includes('HK'));
-    const proxyNameAI = ["自动选择-AI", ...proxyNameCountries, ...proxyNameRAW];
 
-    // 分离出国家/地区的手动选择组和自动选择组
-    const proxyGroupAuto = proxyGroupCountriesFull.filter(item => item.name && item.name.startsWith('自动选择'));
-    const proxyGroupCountries = proxyGroupCountriesFull.filter(item => !item.name || !item.name.startsWith('自动选择'));
+    // ===================================
+    //  分类国家节点组 - 合并节点
+    // ===================================
+
+    // 常规节点组
+    const proxyNameCommon = [
+        'DIRECT',
+        '默认代理',
+        '自动选择',
+        '负载均衡-轮询',
+        '负载均衡-一致性哈希',
+        ...proxyNameCountries, // 各国手动组: 🇺🇸 美国, 🇭🇰 香港...
+        ...proxyNameUseful        // 兜底显示
+    ];
+
+    // AI 专用策略组
+    proxyNameAI.push(...proxyNameAIAuto)
 
     // -----------------------------------
     // 应用选择组 (Stream/Service Groups)
@@ -310,7 +317,7 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
     );
 
     // 合并所有代理组到配置中
-    config['proxy-groups'] = [...proxyGroupStream, ...proxyGroupCountries, ...proxyGroupAuto];
+    config['proxy-groups'] = [...proxyGroupStream, ...proxyGroupManual, ...proxyGroupAuto];
 
     // ===================================
     // 规则集提供者（Rule Providers）
@@ -445,20 +452,6 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         // 1. 强制直连/代理规则（覆盖规则集）
         // -----------------------------------
 
-        // 强制走代理的域名（通常是国内规则集误判的国外域名，或者需要代理访问的特殊域名）
-        'DOMAIN,arthurchiao.art,默认代理',
-        'DOMAIN,su.anywayfosec.xyz,默认代理',
-        'DOMAIN,999.ts1110.top,默认代理',
-        'DOMAIN,cdn.ramenpay.net,默认代理',
-        'DOMAIN,cdn.xiaolincoding.com,默认代理',
-        'DOMAIN,linuxmirrors.cn,默认代理',
-        'DOMAIN-SUFFIX,taishan2025.icu,默认代理',
-        'DOMAIN-SUFFIX,taishan.pro,默认代理',
-        'DOMAIN-SUFFIX,haita.io,默认代理',
-        'DOMAIN-SUFFIX,eehk.net,默认代理',
-        'DOMAIN-SUFFIX,subxiandan.top,默认代理',
-        'DOMAIN-SUFFIX,itzmx.com,默认代理',
-
         // Bing/Copilot 规则
         'DOMAIN-SUFFIX,cn.bing.com,DIRECT',      // 国内 Bing 直连
         'DOMAIN-SUFFIX,bing.com,Bing',           // 国际 Bing 走 Bing 代理组
@@ -472,7 +465,7 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         'DOMAIN-SUFFIX,battle.net,战网',
         'DOMAIN-SUFFIX,blizzard.com,战网',
 
-        // Steam (将部分关键域名走代理，客户端进程直连)
+        // Steam (社区代理，下载直连)
         'DOMAIN-SUFFIX,alipay.com,DIRECT',        // 支付直连
         'DOMAIN-SUFFIX,alipayobjects.com,DIRECT',
         'DOMAIN,api.steampowered.com,默认代理',
@@ -499,20 +492,36 @@ module.exports.parse = async (raw, { axios, yaml, notify, console }, { name, url
         'DOMAIN-KEYWORD,majsoul,DIRECT',
         'DOMAIN-KEYWORD,maj-soul,DIRECT',
 
-        // 强制直连的域名
+        // 走代理的域名
+        'DOMAIN,arthurchiao.art,默认代理',
+        'DOMAIN,su.anywayfosec.xyz,默认代理',
+        'DOMAIN,999.ts1110.top,默认代理',
+        'DOMAIN,cdn.ramenpay.net,默认代理',
+        'DOMAIN,cdn.xiaolincoding.com,默认代理',
+        'DOMAIN,linuxmirrors.cn,默认代理',
+        'DOMAIN-SUFFIX,windsurf.com,默认代理',
+        'DOMAIN-SUFFIX,taishan2025.icu,默认代理',
+        'DOMAIN-SUFFIX,taishan.pro,默认代理',
+        'DOMAIN-SUFFIX,haita.io,默认代理',
+        'DOMAIN-SUFFIX,eehk.net,默认代理',
+        'DOMAIN-SUFFIX,subxiandan.top,默认代理',
+        'DOMAIN-SUFFIX,itzmx.com,默认代理',
+
+        // 直连的域名
         'DOMAIN,download.pytorch.org,DIRECT',
         'DOMAIN,developer.download.nvidia.com,DIRECT',
-        'DOMAIN-KEYWORD,starrycoding,DIRECT',
-        'DOMAIN-KEYWORD,eriktse,DIRECT',
         'DOMAIN,oi-wiki.org,DIRECT',
         'DOMAIN,www.asasmr3.com,DIRECT',
         'DOMAIN,cdn2.asmrfx.com,DIRECT',
         'DOMAIN,tx.asmras.net,DIRECT',
         'DOMAIN,clash.razord.top,DIRECT', // Yacd 面板相关直连
-        'DOMAIN,yacd.haishan.me,DIRECT', // Yacd 面板相关直连
+        'DOMAIN,yacd.haishan.me,DIRECT',  // Yacd 面板相关直连
         'DOMAIN-SUFFIX,entitlenow.com,DIRECT',
+        'DOMAIN-SUFFIX,codeium.com,DIRECT',
+        'DOMAIN-KEYWORD,eriktse,DIRECT',
         'DOMAIN-KEYWORD,asasmr,DIRECT',
-
+        'DOMAIN-KEYWORD,starrycoding,DIRECT',
+        'DOMAIN-KEYWORD,eriktse,DIRECT',
         // -----------------------------------
         // 2. 外部规则集调用（Rule-Set Providers）
         // -----------------------------------
