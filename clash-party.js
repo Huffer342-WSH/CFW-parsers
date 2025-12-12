@@ -497,6 +497,7 @@ function main(config) {
         'DOMAIN,cdn.ramenpay.net,默认代理',
         'DOMAIN,cdn.xiaolincoding.com,默认代理',
         'DOMAIN,linuxmirrors.cn,默认代理',
+        'DOMAIN-SUFFIX,windsurf.com,默认代理',
         'DOMAIN-SUFFIX,taishan2025.icu,默认代理',
         'DOMAIN-SUFFIX,taishan.pro,默认代理',
         'DOMAIN-SUFFIX,haita.io,默认代理',
@@ -507,17 +508,18 @@ function main(config) {
         // 直连的域名
         'DOMAIN,download.pytorch.org,DIRECT',
         'DOMAIN,developer.download.nvidia.com,DIRECT',
-        'DOMAIN-KEYWORD,starrycoding,DIRECT',
-        'DOMAIN-KEYWORD,eriktse,DIRECT',
         'DOMAIN,oi-wiki.org,DIRECT',
         'DOMAIN,www.asasmr3.com,DIRECT',
         'DOMAIN,cdn2.asmrfx.com,DIRECT',
         'DOMAIN,tx.asmras.net,DIRECT',
         'DOMAIN,clash.razord.top,DIRECT', // Yacd 面板相关直连
-        'DOMAIN,yacd.haishan.me,DIRECT', // Yacd 面板相关直连
+        'DOMAIN,yacd.haishan.me,DIRECT',  // Yacd 面板相关直连
         'DOMAIN-SUFFIX,entitlenow.com,DIRECT',
+        'DOMAIN-SUFFIX,codeium.com,DIRECT',
+        'DOMAIN-KEYWORD,eriktse,DIRECT',
         'DOMAIN-KEYWORD,asasmr,DIRECT',
-
+        'DOMAIN-KEYWORD,starrycoding,DIRECT',
+        'DOMAIN-KEYWORD,eriktse,DIRECT',
         // -----------------------------------
         // 2. 外部规则集调用（Rule-Set Providers）
         // -----------------------------------
