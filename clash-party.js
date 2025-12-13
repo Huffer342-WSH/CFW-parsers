@@ -93,7 +93,7 @@ function main(config) {
         if (matchedProxies.length === 0) return null;
 
         // 定义组名称格式
-        const manualGroupName = `${emoji} ${name}`;          // 例: 🇺🇸 美国
+        const manualGroupName = `节点组-${emoji}${name}`;          // 例: 节点组-🇺🇸美国
         const autoGroupName = `♻️${emoji}${name}-自动选择`;   // 例: ♻️🇺🇸美国-自动选择
 
         // 1. 自动选择组 (Url-Test) - 仅使用低倍率节点
@@ -116,11 +116,6 @@ function main(config) {
         return {
             autoGroup,     // 代理组配置对象
             manualGroup,   // 代理组配置对象
-            names: {       // 返回名称用于后续列表生成
-                manual: manualGroupName,
-                auto: autoGroupName,
-                rawName: name // 用于 AI 筛选对比
-            }
         };
     }
 
@@ -173,19 +168,19 @@ function main(config) {
         const result = createProxyGroups(proxyNameUseful, matcher);
 
         if (result) {
-            const { autoGroup, manualGroup, names } = result;
+            const { autoGroup, manualGroup } = result;
 
             // 1. 添加生成的组对象到列表
             proxyGroupAuto.push(autoGroup);
             proxyGroupManual.push(manualGroup);
 
             // 2. 记录手动组名称 (e.g. "🇺🇸 美国")
-            proxyNameCountries.push(names.manual);
+            proxyNameCountries.push(manualGroup.name);
 
             // 3. AI 策略筛选：如果该国家在 AI 白名单中，提取其“自动选择组”
-            if (aiSupportedNames.includes(names.rawName)) {
+            if (aiSupportedNames.includes(matcher.name)) {
                 // 这里存入的是: "♻️ 自动-🇺🇸 美国"
-                proxyNameAI.push(names.auto);
+                proxyNameAI.push(manualGroup.name);
                 proxyNameAIAuto.push(...autoGroup.proxies)
             }
         }
