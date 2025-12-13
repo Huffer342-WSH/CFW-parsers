@@ -425,8 +425,9 @@ function main(config) {
         'PROCESS-NAME,steam.exe,DIRECT',           // Steam 主进程直连
 
         // epic
-        'DOMAIN,download.epicgames.com,DIRECT',
         'DOMAIN,fastly-download.epicgames.com,DIRECT',
+        'PROCESS-NAME,EpicWebHelper.exe,默认代理',
+        'PROCESS-NAME,EpicGamesLauncher.exe,DIRECT',
 
         // Matlab (安装/激活直连，部分服务走代理)
         'PROCESS-NAME,MathWorksProductInstaller,DIRECT',
