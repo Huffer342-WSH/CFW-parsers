@@ -470,7 +470,7 @@ function main(config) {
         // 通用代理
         'RULE-SET,myproxy,默认代理',
         'RULE-SET,private,DIRECT',
-        'RULE-SET,direct,默认代理',
+        'RULE-SET,direct,DIRECT',
         'RULE-SET,proxy,默认代理',
         'RULE-SET,reject,REJECT',
 
