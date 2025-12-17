@@ -417,8 +417,7 @@ function main(config) {
         // Steam (社区代理，下载直连)
         'DOMAIN-SUFFIX,alipay.com,DIRECT',        // 支付直连
         'DOMAIN-SUFFIX,alipayobjects.com,DIRECT',
-        'DOMAIN,api.steampowered.com,默认代理',
-        'DOMAIN,steamcommunity.com,默认代理',
+
         'PROCESS-NAME,steamwebhelper,默认代理',
         'PROCESS-NAME,steamwebhelper.exe,默认代理',
         'PROCESS-NAME,steam,DIRECT',               // Steam 主进程直连
