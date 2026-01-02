@@ -417,11 +417,12 @@ function main(config) {
         // Steam (社区代理，下载直连)
         'DOMAIN-SUFFIX,alipay.com,DIRECT',        // 支付直连
         'DOMAIN-SUFFIX,alipayobjects.com,DIRECT',
-
+        'DOMAIN,steamcommunity.com,默认代理',
+        'DOMAIN,api.steampowered.com,默认代理',
         'PROCESS-NAME,steamwebhelper,默认代理',
         'PROCESS-NAME,steamwebhelper.exe,默认代理',
         'PROCESS-NAME,steam,DIRECT',               // Steam 主进程直连
-        'PROCESS-NAME,steam.exe,DIRECT',           // Steam 主进程直连
+        'PROCESS-NAME,steam.exe,DIRECT',
 
         // epic
         'DOMAIN,fastly-download.epicgames.com,DIRECT',
