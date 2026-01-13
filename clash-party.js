@@ -394,6 +394,13 @@ function main(config) {
             format: 'text',
             url: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/openai.list",
             interval: rulesetUpdateInterval
+        },
+        'Grok': {
+            type: 'http',
+            behavior: 'domain',
+            format: 'text',
+            url: "https://cdn.jsdelivr.net/gh/Huffer342-WSH/Clash-for-Windwos-parsers@main/rules/grok.list",
+            interval: rulesetUpdateInterval
         }
     };
 
@@ -466,6 +473,7 @@ function main(config) {
         'RULE-SET,Microsoft,微软服务',
         'RULE-SET,Gemini,OpenAI & Genimi',
         'RULE-SET,OpenAI,OpenAI & Genimi',
+        'RULE-SET,Grok,OpenAI & Genimi',
 
 
         // 通用代理
