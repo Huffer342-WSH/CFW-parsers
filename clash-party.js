@@ -329,7 +329,7 @@ function main(config) {
             type: 'http',
             behavior: 'domain',
             format: 'text',
-            url: 'https://cdn.jsdelivr.net/gh/Huffer342-WSH/Clash-for-Windwos-parsers@main/rules/proxy.list',
+            url: 'https://github.com/Huffer342-WSH/CFW-parsers/raw/refs/heads/main/rules/proxy.list',
             interval: rulesetUpdateInterval
         },
 
@@ -459,7 +459,6 @@ function main(config) {
         'DOMAIN,clash.razord.top,DIRECT', // Yacd 面板相关直连
         'DOMAIN,yacd.haishan.me,DIRECT',  // Yacd 面板相关直连
         'DOMAIN-SUFFIX,entitlenow.com,DIRECT',
-        'DOMAIN-SUFFIX,codeium.com,DIRECT',
         'DOMAIN-KEYWORD,eriktse,DIRECT',
         'DOMAIN-KEYWORD,asasmr,DIRECT',
         'DOMAIN-KEYWORD,starrycoding,DIRECT',
