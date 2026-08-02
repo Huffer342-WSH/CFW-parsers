@@ -529,10 +529,95 @@ class RuleSplitter:
     # 主流程
     # ==================================================================
 
+    @staticmethod
+    def _ipcidr_key(cidr: str) -> str:
+        """生成 CIDR 比较键，使等价的网络写法可以互相匹配。"""
+        try:
+            return str(ip_network(cidr, strict=False))
+        except ValueError:
+            return cidr.strip().lower()
+
+    @staticmethod
+    def _classical_key(rule: str) -> str:
+        """生成 classical 规则比较键，忽略规则类型大小写及逗号旁空白。"""
+        parts = [part.strip() for part in rule.split(",")]
+        if parts:
+            parts[0] = parts[0].upper()
+        return ",".join(parts)
+
+    def apply_exclusions(
+        self,
+        domains: List[str],
+        ipcidrs: List[str],
+        classical: List[str],
+        exclusions: List[str],
+    ) -> Tuple[List[str], List[str], List[str]]:
+        """
+        删除配置中 ``exclude`` 指定的规则。
+
+        ``exclude`` 优先使用与 ``payload`` 相同的 classical 写法；另外也支持
+        domain-native（如 ``+.example.com``）和纯 CIDR 写法，便于直接复制外部
+        规则。删除发生在去重前，并会删除所有完全等价的条目。
+        """
+        excluded_domains: set = set()
+        excluded_ipcidrs: set = set()
+        excluded_classical: set = set()
+
+        for rule in exclusions:
+            rule = rule.strip()
+            if not rule or rule.startswith("#"):
+                continue
+
+            rtype, content = self._parse_rule_tuple(rule)
+            if rtype in DOMAIN_RULE_TYPES:
+                domain = (
+                    f"{SUFFIX_PREFIX}{content}"
+                    if rtype == "DOMAIN-SUFFIX"
+                    else content
+                )
+                excluded_domains.add(domain.lower())
+            elif rtype in IPCIDR_RULE_TYPES:
+                cidr = content.split(",", 1)[0].strip()
+                if cidr:
+                    excluded_ipcidrs.add(self._ipcidr_key(cidr))
+            elif rtype is not None:
+                excluded_classical.add(self._classical_key(rule))
+            else:
+                try:
+                    ip_network(rule, strict=False)
+                except ValueError:
+                    domain = self._normalize_domain(rule)
+                    if domain:
+                        excluded_domains.add(domain.lower())
+                else:
+                    excluded_ipcidrs.add(self._ipcidr_key(rule))
+
+        kept_domains = [
+            rule for rule in domains if rule.lower() not in excluded_domains
+        ]
+        kept_ipcidrs = [
+            rule for rule in ipcidrs
+            if self._ipcidr_key(rule) not in excluded_ipcidrs
+        ]
+        kept_classical = [
+            rule for rule in classical
+            if self._classical_key(rule) not in excluded_classical
+        ]
+
+        removed_domains = len(domains) - len(kept_domains)
+        removed_ipcidrs = len(ipcidrs) - len(kept_ipcidrs)
+        removed_classical = len(classical) - len(kept_classical)
+        logger.info(
+            "exclude 删除 — domain: %d, ipcidr: %d, classical: %d",
+            removed_domains, removed_ipcidrs, removed_classical,
+        )
+
+        return kept_domains, kept_ipcidrs, kept_classical
+
     def split_config(self, config_file: str,
                      deduplicate: bool = True) -> Tuple[List[str], List[str], List[str]]:
         """
-        解析一个配置文件的 include + payload，返回三类规则。
+        解析一个配置文件的 include + payload，并应用 exclude，返回三类规则。
 
         Returns:
             (domain_rules, ipcidr_rules, classical_rules)
@@ -601,6 +686,23 @@ class RuleSplitter:
             all_domains.extend(dm)
             all_ipcidrs.extend(ip)
             all_classical.extend(cl)
+
+        # ---- 删除 exclude 指定的规则 ----
+        exclude = config_data.get("exclude", [])
+        if exclude is None:
+            exclude = []
+        elif not isinstance(exclude, list):
+            raise ValueError(f"exclude 必须是 YAML 列表: {config_file}")
+
+        if exclude:
+            invalid_count = sum(not isinstance(item, str) for item in exclude)
+            if invalid_count:
+                logger.warning("exclude 跳过 %d 个非字符串条目", invalid_count)
+
+            exclusions = [item for item in exclude if isinstance(item, str)]
+            all_domains, all_ipcidrs, all_classical = self.apply_exclusions(
+                all_domains, all_ipcidrs, all_classical, exclusions
+            )
 
         # ---- 去重 ----
         logger.info(

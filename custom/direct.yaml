@@ -5,6 +5,15 @@ include:
       url: https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/meta/geo/geosite/cn.list,
     }
 
+# 删除从 include 导入但不需要的规则。支持 classical、domain-native 和纯 CIDR 写法。
+exclude:
+#   +.cn
+# 使用示例（按需替换上面的空列表）：
+# exclude:
+#   - DOMAIN-SUFFIX,example.com
+#   - +.example.org
+#   - IP-CIDR,192.0.2.0/24,no-resolve
+
 payload:
   - DOMAIN-SUFFIX,bettergi.com
   - DOMAIN,download.pytorch.org
