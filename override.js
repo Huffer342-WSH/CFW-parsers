@@ -406,6 +406,9 @@ function main(config) {
         'DOMAIN,game.maj-soul.com,默认代理',
         'DOMAIN-KEYWORD,majsoul,DIRECT',
 
+        // Google Play
+        'DOMAIN-SUFFIX,googleapis.cn,默认代理',
+
         // 柚子社（仅当存在“节点组-🇯🇵日本”时启用）
         ...(hasJapanGroup ? [
             'DOMAIN-SUFFIX,yuzu-soft.com,节点组-🇯🇵日本',
@@ -428,8 +431,8 @@ function main(config) {
 
         // 通用代理
         'RULE-SET,reject,REJECT',
-        'RULE-SET,domain-direct,DIRECT',
         'GEOSITE,private,DIRECT',
+        'RULE-SET,domain-direct,DIRECT',
         'RULE-SET,domain-proxy,默认代理',
         'GEOSITE,gfw,默认代理',
         'GEOSITE,geolocation-!cn,默认代理',
