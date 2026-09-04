@@ -18,6 +18,7 @@ payload:
   - DOMAIN-SUFFIX,bettergi.com
   - DOMAIN,download.pytorch.org
   - DOMAIN,developer.download.nvidia.com
+  - DOMAIN,invite.linuxdo.org
   - DOMAIN,oi-wiki.org
   - DOMAIN,www.asasmr3.com
   - DOMAIN,www.a3asmr.com
