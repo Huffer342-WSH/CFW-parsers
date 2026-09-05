@@ -352,11 +352,12 @@ function main(config) {
 
     // 定义外部规则集，方便集中管理和更新
     config['rule-providers'] = {
-        // Loyalsoldier
+        // 秋风 Only.Ads：精简广告规则，使用上游提供的 MRS
         'reject': {
             type: 'http',
             behavior: 'domain',
-            url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt',
+            format: 'mrs',
+            url: 'https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main/Filters/AWAvenue-Ads-Rule-Clash-Only.Ads.mrs',
             interval: rulesetUpdateInterval
         },
         'domain-proxy': {
