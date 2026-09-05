@@ -3,7 +3,7 @@ function main(config) {
     // 自动测速/选择节点组的测试间隔，单位：秒
     const autoSelectInterval = 600;
     const rulesetUpdateInterval = 64800;
-    const netTestUrl = 'https://www.gstatic.com/generate_204'
+    const netTestUrl = 'https://www.gstatic.com/generate_204';
 
     // -----------------------------------
     // 基础参数配置
@@ -25,8 +25,7 @@ function main(config) {
         "override-destination": false,
         sniff: {
             HTTP: {
-                ports: [80, 443],
-                "override-destination": false
+                ports: [80, 443]
             },
             TLS: {
                 ports: [443]
@@ -60,8 +59,9 @@ function main(config) {
         "respect-rules": false,
         "enhanced-mode": "fake-ip",
         "fake-ip-range": "198.18.0.1/16",
+        "fake-ip-filter-mode": "blacklist",
         "fake-ip-filter": [
-            '*',
+            '*', // 仅匹配 printer 等单段主机名，不覆盖所有域名
             '+.lan',
             '+.local',
             'time.*.com',
@@ -80,11 +80,12 @@ function main(config) {
             "+.525536.xyz": ['https://38.76.213.238:8080/dns-query', 'https://sublol.iotechn.com:10086/dns-query'],
         },
 
-        // 适用于直连国外服务器时，通过国外的DNS解析得到可靠的IP
+        // 命中策略后仅查询这里的服务器；二者并发，均经“默认代理”组。
+        // 该组手动选择 DIRECT 时，DNS 也会随之直连。
         "nameserver-policy": {
             "geosite:gfw": [
                 "https://cloudflare-dns.com/dns-query#默认代理",
-                "https://d.atri.ink/dns-query"
+                "https://d.atri.ink/dns-query#默认代理"
             ]
         },
         "nameserver": [
@@ -92,8 +93,12 @@ function main(config) {
             "223.5.5.5",
         ],
 
-        // 查询得到虚假IP时使用fallback的结果
+        // 主 DNS 失败、无 IP 答案、返回非 CN 公网 IP 或以下地址时使用 fallback。
+        // 按需查询可减少并发请求，但需要 fallback 时会多等待一次主 DNS 查询。
+        "fallback-lazy-query": true,
         "fallback-filter": {
+            "geoip": true,
+            "geoip-code": "CN",
             "ipcidr": [
                 "240.0.0.0/4",
                 "0.0.0.0/32",
@@ -115,10 +120,8 @@ function main(config) {
     const INVALID_NODE_PATTERN = /剩余|套餐|网址|客服|过滤|时间|境外/;
     const AI_REGION_NAMES = ['美国', '日本', '新加坡', '台湾', '英国', '韩国', '法国', '德国'];
     const SERVICE_GROUP_META_LIST = [
-        ['Microsoft Copilot', 'Microsoft%20Copilot.png'],
         ['战网', 'Battle.png'],
         ['Telegram', 'Telegram.png'],
-        ['苹果服务', 'Apple.png'],
         ['微软服务 - CN', 'Microsoft.png'],
         ['微软服务', 'Microsoft.png'],
     ];
@@ -150,7 +153,7 @@ function main(config) {
             name: groupName,
             ...(iconUrl ? { icon: iconUrl } : {}),
             type: 'select',
-            proxies: proxyOptionNames,
+            proxies: [...new Set(proxyOptionNames)],
         };
     }
 
@@ -159,9 +162,10 @@ function main(config) {
      * @param {string} groupName 节点组名字
      * @param {string[]} proxyNodeNames 参与测速的节点名字数组
      * @param {object} [options] 覆盖默认测速参数
-     * @returns {object} 节点组元素
+     * @returns {object|null} 节点组元素；无测速候选时返回 null
      */
     function createUrlTestGroupItem(groupName, proxyNodeNames, options = {}) {
+        if (proxyNodeNames.length === 0) return null;
         return {
             name: groupName,
             type: 'url-test',
@@ -177,9 +181,10 @@ function main(config) {
      * @param {string} groupName 节点组名字
      * @param {string[]} proxyNodeNames 参与负载均衡的节点名字数组
      * @param {string} strategy 负载均衡策略
-     * @returns {object} 节点组元素
+     * @returns {object|null} 节点组元素；无测速候选时返回 null
      */
     function createLoadBalanceGroupItem(groupName, proxyNodeNames, strategy) {
+        if (proxyNodeNames.length === 0) return null;
         return {
             name: groupName,
             type: 'load-balance',
@@ -206,15 +211,19 @@ function main(config) {
 
         const regionSelectGroupName = `节点组-${regionMatcher.emoji}${regionMatcher.name}`;
         const regionAutoGroupName = `♻️${regionMatcher.emoji}${regionMatcher.name}-自动选择`;
-        const regionProxyOptionNames = [regionAutoGroupName, ...matchedProxyNodeNames];
+        const autoGroupItem = createUrlTestGroupItem(
+            regionAutoGroupName,
+            filterHighMultiplierNodes(matchedProxyNodeNames),
+            { interval: 300, tolerance: 50 }
+        );
+        const regionProxyOptionNames = [
+            ...(autoGroupItem ? [regionAutoGroupName] : []),
+            ...matchedProxyNodeNames,
+        ];
 
         return {
             regionName: regionMatcher.name,
-            autoGroupItem: createUrlTestGroupItem(
-                regionAutoGroupName,
-                filterHighMultiplierNodes(matchedProxyNodeNames),
-                { interval: 300, tolerance: 50 }
-            ),
+            autoGroupItem,
             selectGroupItem: createSelectGroupItem(
                 regionSelectGroupName,
                 regionProxyOptionNames
@@ -259,42 +268,55 @@ function main(config) {
     // GroupNames: 节点组名字数组；OptionNames: Clash proxies 候选项名字数组。
     const regionSelectGroupNames = [];
     const aiAutoProxyNodeNames = [];
-    const aiProxyOptionNames = ['自动选择-AI'];
+    const aiProxyOptionNames = [];
 
     regionMatchers.forEach(regionMatcher => {
         const regionGroupItems = createRegionGroupItems(usableProxyNodeNames, regionMatcher);
         if (!regionGroupItems) return;
 
-        autoProxyGroupItems.push(regionGroupItems.autoGroupItem);
+        if (regionGroupItems.autoGroupItem) {
+            autoProxyGroupItems.push(regionGroupItems.autoGroupItem);
+        }
         regionSelectGroupItems.push(regionGroupItems.selectGroupItem);
         regionSelectGroupNames.push(regionGroupItems.selectGroupItem.name);
 
         if (AI_REGION_NAMES.includes(regionGroupItems.regionName)) {
             aiProxyOptionNames.push(regionGroupItems.selectGroupItem.name);
-            aiAutoProxyNodeNames.push(...regionGroupItems.autoGroupItem.proxies);
+            if (regionGroupItems.autoGroupItem) {
+                aiAutoProxyNodeNames.push(...regionGroupItems.autoGroupItem.proxies);
+            }
         }
     });
+
+    // 高倍率节点仍可手选，但不创建空的自动测速/负载均衡组。
+    const generalAutoGroupItems = [
+        createUrlTestGroupItem('自动选择', autoTestProxyNodeNames),
+        createLoadBalanceGroupItem('负载均衡-轮询', autoTestProxyNodeNames, 'round-robin'),
+        createLoadBalanceGroupItem('负载均衡-一致性哈希', autoTestProxyNodeNames, 'consistent-hashing'),
+    ].filter(Boolean);
+    const generalAutoGroupNames = generalAutoGroupItems.map(group => group.name);
+    const aiAutoGroupItem = createUrlTestGroupItem('自动选择-AI', [...new Set(aiAutoProxyNodeNames)]);
 
     const commonProxyOptionNames = [
         '默认代理',
         'DIRECT',
-        '自动选择',
-        '负载均衡-轮询',
-        '负载均衡-一致性哈希',
+        ...generalAutoGroupNames,
         ...regionSelectGroupNames,
         ...usableProxyNodeNames,
     ];
 
     const defaultProxyOptionNames = [
-        '自动选择',
+        ...(generalAutoGroupItems.length ? ['自动选择'] : usableProxyNodeNames),
         'DIRECT',
-        '负载均衡-轮询',
-        '负载均衡-一致性哈希',
+        ...generalAutoGroupNames.filter(name => name !== '自动选择'),
         ...regionSelectGroupNames,
         ...rawProxyNodeNames,
     ];
 
+    if (aiAutoGroupItem) aiProxyOptionNames.unshift(aiAutoGroupItem.name);
     aiProxyOptionNames.push(...aiAutoProxyNodeNames);
+    // 无 AI 地区节点时使用默认代理，不隐式放开高倍率自动测速。
+    if (aiProxyOptionNames.length === 0) aiProxyOptionNames.push('默认代理');
 
     const defaultProxyGroupItem = createSelectGroupItem(
         '默认代理',
@@ -311,10 +333,8 @@ function main(config) {
     });
 
     autoProxyGroupItems.unshift(
-        createUrlTestGroupItem('自动选择', autoTestProxyNodeNames),
-        createUrlTestGroupItem('自动选择-AI', aiAutoProxyNodeNames),
-        createLoadBalanceGroupItem('负载均衡-轮询', autoTestProxyNodeNames, 'round-robin'),
-        createLoadBalanceGroupItem('负载均衡-一致性哈希', autoTestProxyNodeNames, 'consistent-hashing'),
+        ...generalAutoGroupItems,
+        ...(aiAutoGroupItem ? [aiAutoGroupItem] : []),
     );
 
     config['proxy-groups'] = [
@@ -337,7 +357,7 @@ function main(config) {
             type: 'http',
             behavior: 'domain',
             url: 'https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt',
-            interval: rulesetUpdateInterval // 每天更新
+            interval: rulesetUpdateInterval
         },
         'domain-proxy': {
             type: 'http',
@@ -418,22 +438,23 @@ function main(config) {
         // -----------------------------------
         // 2. 外部规则集调用（Rule-Set Providers）
         // -----------------------------------
+        'RULE-SET,domain-ai,AI',
+
         // 服务专用组规则
         'GEOSITE,telegram,Telegram',
         'GEOSITE,microsoft@cn,微软服务 - CN',
         'GEOSITE,microsoft,微软服务',
 
-        // AI
-        'RULE-SET,domain-ai,AI',
-        'IP-CIDR,160.79.104.0/21,AI', //claude
-        'IP-CIDR6,2607:6bc0::/32,AI',
-        'IP-ASN,399358,AI',
+        // AI IP 兜底只匹配已知目标 IP，不为后续域名规则提前触发 DNS。
+        'IP-CIDR,160.79.104.0/21,AI,no-resolve',
+        'IP-CIDR6,2607:6bc0::/32,AI,no-resolve',
+        'IP-ASN,399358,AI,no-resolve',
 
         // 通用代理
         'RULE-SET,reject,REJECT',
         'GEOSITE,private,DIRECT',
-        'RULE-SET,domain-direct,DIRECT',
         'RULE-SET,domain-proxy,默认代理',
+        'RULE-SET,domain-direct,DIRECT',
         'GEOSITE,gfw,默认代理',
         'GEOSITE,geolocation-!cn,默认代理',
 
